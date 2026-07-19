@@ -16,12 +16,16 @@ from sklearn.metrics import confusion_matrix, classification_report, accuracy_sc
 # costante per migliorare leggibilità andando a capo nelle stampe 
 new_line = "\n"
 
+# per caricare i dati di training e di test
+
 train = pd.read_csv("cats_dataset.csv", dtype=str)
 test = pd.read_csv("test_set.csv", dtype=str)
 
-# per caricare i dati di training e di test
-train.shape
-test.shape
+#CONTROLLARE RECAL INVECE DI RECALL
+
+# stampa le dimensioni dei due dataset (righe, colonne)
+# serve a verificare che i file siano stati caricati correttamente
+print(train.shape, test.shape) 
 
 # pulizia del dataset per il training(i dati che non contengono una razza)
 train = train.dropna(subset=["razza"])
@@ -80,7 +84,7 @@ X_test_final = test_df[feat].values #dataset di test
 # altrimenti potrebbe capitare che una razza finisca tutta nell'80% e il modello non venga mai testato su di essa
 #! TODO: Correggere spiegazione
 X_tr, X_val, y_tr, y_val = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-
+# abbiamo scelto GradientBoosting perché funziona molto bene su dati tabulari come in questa challange 
 # allena tanti alberi in sequenza (100). Se uno sbaglia, gli altri alberi lo correggono.
 # così otteniamo un modello molto più preciso
 # gradient boosting allena 100 alberi decisionali in sequenza
@@ -139,13 +143,22 @@ print(f"{new_line}predictions.csv salvato")
 
 # grafici 
 
-# quanti gatti per razza ci sono nel dataset di training
+# distribuzione delle razze nel training set 
 plt.figure(figsize=(8, 4))
 train_df["razza"].value_counts().plot(kind="bar", color="skyblue", edgecolor="black")
 plt.title("razze nel dataset")
 plt.xticks(rotation=15)
 plt.tight_layout()
 plt.savefig("grafici/razze.png")
+plt.close()
+
+
+# heatmap correlazione tra le feature numeriche  richiesto dal regolamento 
+plt.figure(figsize=(5, 4))
+sns.heatmap(train_df[["eta_anni", "peso_kg"]].corr(), annot=True, cmap="coolwarm")
+plt.title("correlazione eta vs peso")
+plt.tight_layout()
+plt.savefig("grafici/correlazione.png")
 plt.close()
 
 # matrice della confusione cioè mostra fli errori del modello razza per razza
