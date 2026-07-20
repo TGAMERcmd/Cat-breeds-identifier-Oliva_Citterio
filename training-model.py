@@ -177,7 +177,7 @@ plt.savefig("grafici/razze.png")
 plt.close()
 
 
-# heatmap correlazione tra le feature numeriche  richiesto dal regolamento 
+# heatmap correlazione tra le feature numeriche
 plt.figure(figsize=(5, 4))
 sns.heatmap(train_df[["eta_anni", "peso_kg"]].corr(), annot=True, cmap="coolwarm")
 plt.title("correlazione eta vs peso")
@@ -185,20 +185,12 @@ plt.tight_layout()
 plt.savefig("grafici/correlazione.png")
 plt.close()
 
+
 # matrice della confusione
-
-
-
-
-
-#!!!!! TODO __ FIX
-
-
-
-
 # mostra gli errori che il modello effettua in base alla razza
 # sulla diagonale ci sono i gatti classificati correttamente
-# fuori dalla diagonale ci sono gli errori
+# fuori dalla diagonale ci sono gli errori. 
+# Più il modello si "avvicina" alla diagonale, più è preciso
 
 mat = confusion_matrix(y_val, y_pred_val, labels=classi_val)
 plt.figure(figsize=(7, 5))
@@ -212,7 +204,7 @@ plt.savefig("grafici/confusione.png")
 plt.close()
 
 
-#  quali parametri ha pesato di più il modello per decidere la razza
+# Grafico che mostra il peso dei parametri su cui il modello si concentra per decidere la razza
 plt.figure(figsize=(8, 4))
 imp = modello_finale.feature_importances_
 idx = np.argsort(imp)
@@ -222,8 +214,8 @@ plt.tight_layout()
 plt.savefig("grafici/importanza.png")
 plt.close()
 
-# accuratezza su ogni fold della corss validation 
-# un fold è uno dei 5 pezzi in cui viene diviso il dataset
+# accuratezza su ogni fold della cross validation 
+# un fold è uno dei 5 "pezzi" in cui viene diviso il dataset
 plt.figure(figsize=(6, 3))
 plt.bar(range(1, 6), cv_scores * 100, color="steelblue", edgecolor="black")
 plt.axhline(cv_scores.mean() * 100, color="red", linestyle="--", label=f"media: {cv_scores.mean()*100:.1f}%")
