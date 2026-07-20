@@ -81,60 +81,82 @@ X = train_df[feat].values
 y = train_df["razza_num"].values
 X_test_final = test_df[feat].values #dataset di test
 
-# si allena sull'80% dei gatti (in fase di training -- test_size=0.2). Poi facciamo il controllo sul restante 20% per verificare quanto sbaglia 
-# stratify=y garantisce che tutte le razze siano presenti sia nell'80% che nel 20% 
-# altrimenti potrebbe capitare che una razza finisca tutta nell'80% e il modello non venga mai testato su di essa
+"""
+In fase di training ci alleniamo solo su parte dei dati, in modo che poi possiamo verificare l'accuratezza del modello.
+Per semplicità, lo chiameremo "dataset di controllo". 
+
+Facciamo in modo che tutte le razze siano sia nel dataset di controllo che in quello su cui ci alleniamo, in modo che possiamo
+testare l'accuratezza del modello su tutte le razze del dataset completo.
+
+Dopo che abbiamo effettuato il controllo, alleneremo il modello anche sul dataset di controllo.
+
+
+* test_size=0.2 --> divide il dataset completo 80-20. L'80% è la parte di dataset su cui alleniamo il modello, mentre il 20% è
+il dataset di controllo
+* stratify=y --> fa in modo che nel dataset di controllo ci siano gatti appartenenti a tutte le razze su cui il modello si è allenato
+"""
 X_tr, X_val, y_tr, y_val = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
 
-# abbiamo scelto GradientBoosting perché funziona molto bene su dati tabulari come in questa challange 
-# allena tanti alberi in sequenza (100). Se uno sbaglia, gli altri alberi lo correggono.
-# così otteniamo un modello molto più preciso
-# gradient boosting allena 100 alberi decisionali in sequenza
-#dopo
-# ogni albero impara dagli errori di quello prima in tal modo che il modello possa migliorare iterazione dopo iterazione
-# max_depth=4 quante domande può fare ogni albero
-# random_state=42 fissa il caso così i risultati sono riproducibili
+"""
+Abbiamo scelto il GradientBoosting perché funziona molto bene su dati tabulari.
+
+Il GradientBoosting allena tanti alberi in sequenza (nel nostro caso, 100). Se un albero sbaglia, gli altri alberi lo correggono.
+Questa auto-correzione consente di ottenere un modello molto più preciso, in quanto ogni albero impara dagli errori di un altro.
+
+#! TODO: Chiarifica
+* max_depth=4 --> quante domande può fare ogni albero
+* random_state=42 --> imposta la casualità per ottenere risultati riproducibili
+"""
 clf = GradientBoostingClassifier(n_estimators=100, max_depth=4, random_state=42)
 clf.fit(X_tr, y_tr)
 
-# y_prediction_value sono le razze che il modello ha previsto per il 20% di validazione
+# y_prediction_value sono le razze che il modello ha previsto per il dataset di controllo
 y_pred_val = clf.predict(X_val)
 
-#! TODO: migliora commenti di questa sezione
+# calcola l'accuratezza del modello e la stampa come percentuale. Per farlo, trova la quantità di previsioni corrette sul totale delle razze (nel dataset di controllo)
+unfinished_model_accuracy = accuracy_score(y_val, y_pred_val)
+print(f"{new_line}accuracy validation: {unfinished_model_accuracy * 100:.2f}%")
 
-# confronto le razze previste con quelle reali e calcolo la percentuale di quelle giuste e la stampo
-acc = accuracy_score(y_val, y_pred_val)
-print(f"{new_line}accuracy validation: {acc * 100:.2f}%")
-
-# divide i dati in 5 "pezzi" e fa i test su questi 5 "pezzi", per avere un'accuratezza migliore
+# divide i dati in 5 "pezzi" e fa l'operazione di prima su questi 5 "pezzi", per avere la misura dell'accuratezza più precisa
 # ogni volta usa un gruppo diverso come test e gli altri 4 per allenarsi
 cv_scores = cross_val_score(clf, X, y, cv=5)
 print(f"cross-val media: {cv_scores.mean() * 100:.2f}% (+/- {cv_scores.std() * 100:.2f}%)")
 print(f"fold scores: {[round(s*100,1) for s in cv_scores]}")
 
-# trasforma i numeri in nomi di razze che esistono nel 20% di validazione e le converto in nomi
-# serve per la matrice di confusione e il report sotto
+# converte ogni numero previsto nella rispettiva razza (Es. 1 --> Siamese) nel dataset di controllo
+# Operazione necessaria per il calcolo della matrice di confusione
 classi_val = sorted(set(y_val))
 nomi_val = [razze_map[c] for c in classi_val]
-# stampa in modo dettagliato le info su ogni razza. Ad esempio, 0.90 per i gatti Persiani significa che quando 
-# predice che un gatto è persiano è sicuro al 90%
-#dopo
-# stampa un report dettagliato per ogni razza  usando 4 metriche precise 
-# 1 precision quando dice "è un Bengala" quante volte ha ragione (es. 0.90 = 90%)
-# 2 recall di tutti i Bengala reali, quanti ne ha trovati (es. 0.97 = ne trova 97 su 100)
-# 3 f1-score è la media bilanciata tra precision e recall, il voto finale possiamo dire
-# 4 support quanti gatti di quella razza ci sono nel 20% di test
+
+"""
+Stampa in modo dettagliato le info su ogni razza. 
+
+Esempio, 0.90 per i gatti Persiani = 90% di sicurezza che il gatto è un Persiano.
+
+Stampa un report dettagliato su razza usando 4 metriche precise: 
+1 precision -- quando effettua una predizione, quante volte ha ragione (es. 0.90 = 90%)
+2 recall -- su tutti i gatti appartenenti ad una razza, quanti ne ha trovati (es. 0.97 = ne trova 97 su 100)
+3 f1-score -- media pesata tra precision e recall, il "voto finale"
+4 support -- quanti gatti di una stessa razza ci sono nel dataset di controllo
+
+Esempio per i Siamesi (non riflette la realtà)
+1 - 90% --- 9 volte su 10 indovina correttamente che un gatto è un siamese
+2 - 97% --- ha trovato il 97% dei gatti siamesi nel dataset
+3 - 93.5% 
+4 - 15 -- numero di gatti siamesi nel dataset
+"""
 print(new_line, classification_report(y_val, y_pred_val, labels=classi_val, target_names=nomi_val), sep="")
 
-## rialleno il modello su tutti i dati del train 100% non solo l 80%
+# alleno il modello su tutti i dati (quindi anche il dataset di controllo) 
 modello_finale = GradientBoostingClassifier(n_estimators=100, max_depth=4, random_state=42)
 modello_finale.fit(X, y)
 
-# predice le razze del dataset di test  e converte i numeri in nomi
+# predice le razze del dataset di test e converte i numeri previsti nei nomi delle razze (es 1 --> siamese)
 preds = modello_finale.predict(X_test_final)
 pred_nomi = [razze_map[p] for p in preds]
 
-# salva in un file csv l'ID del gatto e la sua razza prevista usando una tabella
+# salva in un file csv l'ID del gatto e la rispettiva razza prevista
+# utilizza il dizionario di prima
 out = pd.DataFrame({
     "ID": test_df["ID"],
     "razza_prevista": pred_nomi
@@ -163,9 +185,20 @@ plt.tight_layout()
 plt.savefig("grafici/correlazione.png")
 plt.close()
 
-# matrice della confusione cioè mostra fli errori del modello razza per razza
+# matrice della confusione
+
+
+
+
+
+#!!!!! TODO __ FIX
+
+
+
+
+# mostra gli errori che il modello effettua in base alla razza
 # sulla diagonale ci sono i gatti classificati correttamente
-# fuori dalla diagonale ci sono gli erorri
+# fuori dalla diagonale ci sono gli errori
 
 mat = confusion_matrix(y_val, y_pred_val, labels=classi_val)
 plt.figure(figsize=(7, 5))
