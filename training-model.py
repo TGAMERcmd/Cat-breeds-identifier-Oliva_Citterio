@@ -1,8 +1,8 @@
 """
 pandas per caricare i dati nelle tabelle
 numpy per calcoli e ordinamento delle liste
-matplot per fare grafici
-seaborn per fare grafici
+matplot per creare e salvare grafici
+seaborn per fare grafici migliori
 sklearn per allenamento del modello
 """
 import pandas as pd
@@ -189,7 +189,7 @@ plt.close()
 # usiamo un mapping manuale così i numeri hanno senso sedentario=0, molto_attivo=3
 # cat.codes li ordinerebbe alfabeticamente e non avrebbe senso
 ordine_attivita = {"sedentario": 0, "moderato": 1, "attivo": 2, "molto_attivo": 3}
-train_df["livello_attivita_num"] = train_df["livello_attivita"].map(ordine_attivita)
+train_df["livello_attivita_num"] = train_df["livello_attivita_orig"].map(ordine_attivita)
 plt.figure(figsize=(5, 4))
 sns.heatmap(
     train_df[["eta_anni", "livello_attivita_num"]].corr(),
